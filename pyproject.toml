@@ -1,0 +1,15 @@
+[project]
+name = "segmentasi-polip-unet-p10"
+version = "0.1.0"
+description = "Segmentasi polip pada citra kolonoskopi menggunakan U-Net"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "pillow",
+    "torch",
+    "torchvision",
+    "kagglehub",
+    "jupyterlab",
+    "ipykernel",
+]

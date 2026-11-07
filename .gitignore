@@ -1,0 +1,16 @@
+# Dataset
+/data/
+*.zip
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# File sementara
+.env
+.DS_Store
