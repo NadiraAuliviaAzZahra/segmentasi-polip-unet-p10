@@ -17,9 +17,9 @@
 
 | Nama | NIM | Username GitHub | Kontribusi utama |
 |---|---|---|---|
-| ✍️ | ✍️ | ✍️ | ✍️ misal: menjalankan eksperimen, menulis Bagian 3 |
-| ✍️ | ✍️ | ✍️ | ✍️ |
-| ✍️ | ✍️ | ✍️ | ✍️ |
+| Nadira Aulivia Az Zahra | 123430071 | ✍️ | ✍️ misal: menjalankan eksperimen, menulis Bagian 3 |
+| Nadira Aulivia Az Zahra | 123430013 | ✍️ | ✍️ |
+| Andini Nurul Fitri | 123430103 | ✍️ | ✍️ |
 
 ## 1. Pertanyaan
 
