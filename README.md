@@ -17,8 +17,8 @@
 
 | Nama | NIM | Username GitHub | Kontribusi utama |
 |---|---|---|---|
-| Nadira Aulivia Az Zahra | 123430071 | ✍️ | ✍️ misal: menjalankan eksperimen, menulis Bagian 3 |
-| Nadira Aulivia Az Zahra | 123430013 | ✍️ | ✍️ |
+| Nadira Aulivia Az Zahra | 123430071 | NadiraAuliviaAzZahra | ✍️ misal: menjalankan eksperimen, menulis Bagian 3 |
+| Puri Andhana Ht Sibero | 123430013 | puriandhana | ✍️ |
 | Andini Nurul Fitri | 123430103 | ✍️ | ✍️ |
 
 ## 1. Pertanyaan
@@ -44,9 +44,8 @@ Augmentasi apa yang membantu U-Net menemukan polip pada citra kolonoskopi, dan a
 | Skenario | Augmentasi (kode) | Alasan klinis | Hipotesis: Dice naik/turun/sama? |
 |---|---|---|---|
 | Tanpa augmentasi | — | Pembanding | — |
-| Flip | ✍️ `v2....` | Dalam kolonoskopi, polip bisa muncul di sisi mana pun dari lumen usus, dan orientasi gambar bergantung pada putaran kamera endoskop. Orientasi tidak punya makna diagnostik, jadi flip menambah variasi posisi dan arah polip tanpa mengubah morfologinya. Model jadi tidak bergantung pada posisi tertentu. | ✍️ |
-| Kecerahan & Kontras | ✍️ `v2....` | Pencahayaan saat endoskopi berubah-ubah menurut jarak kamera ke mukosa, sudut pandang, pantulan cairan atau lendir, dan perbedaan alat antar rumah sakit. Polip bisa tampak terlalu terang atau terlalu gelap, dengan kontras yang rendah terhadap mukosa di sekitarnya. Augmentasi ini membuat model lebih tahan terhadap variasi tersebut. | ✍️ |
-| Flip + Kecerahan & Kontras | ✍️ `v2....` | Flip diperkirakan meningkatkan Dice Score secara moderat karena model melihat lebih banyak variasi posisi polip dan lebih sedikit overfitting. Kecerahan & Kontras diperkirakan meningkatkan Dice Score pada data uji dengan kondisi pencahayaan berbeda dari data latih. Kombinasi keduanya diperkirakan memberi Dice Score tertinggi, selama parameter kecerahan dan kontras tidak terlalu ekstrem sampai batas polip jadi tidak terlihat. | ✍️ |
+| Flip | v2.Compose([v2.RandomHorizontalFlip(), v2.RandomVerticalFlip()]) | Kamera endoskop berputar bebas di dalam usus, jadi tidak ada arah “atas” atau “kiri” yang pasti. Polip bisa muncul di sisi mana pun dinding usus. Foto yang di-flip tetap masuk akal secara klinis dan bentuk polip tidak berubah, berbeda dengan X-ray dada tempat flip memindahkan jantung ke sisi lain. | Naik. Dengan hanya 200 citra latih, flip menambah variasi posisi dan arah polip yang realistis sehingga model tidak menghafal letak tertentu dan overfitting berkurang. |
+| Kecerahan & Kontras | v2.ColorJitter(brightness=0.3, contrast=0.3) | Terang gambar endoskopi tidak selalu sama. Lampu ada di ujung kamera, jadi kecerahan berubah menurut jarak dan sudut kamera ke mukosa, pantulan cairan atau lendir, dan perbedaan alat. Polip bisa tampak lebih terang atau gelap dan kurang kontras terhadap mukosa di sekitarnya. | Naik sedikit atau sama. Kenaikannya diperkirakan lebih kecil daripada Flip, karena foto Kvasir-SEG berasal dari rumah sakit dan alat yang relatif seragam sehingga variasi pencahayaan antara data latih dan uji tidak besar. |
 
 Contoh augmentasi yang dicoba:
 
