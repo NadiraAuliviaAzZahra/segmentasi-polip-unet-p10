@@ -44,8 +44,9 @@ Augmentasi apa yang membantu U-Net menemukan polip pada citra kolonoskopi, dan a
 | Skenario | Augmentasi (kode) | Alasan klinis | Hipotesis: Dice naik/turun/sama? |
 |---|---|---|---|
 | Tanpa augmentasi | — | Pembanding | — |
-| ✍️ | ✍️ `v2....` | ✍️ | ✍️ |
-| ✍️ | ✍️ `v2....` | ✍️ | ✍️ |
+| Flip | ✍️ `v2....` | Dalam kolonoskopi, polip bisa muncul di sisi mana pun dari lumen usus, dan orientasi gambar bergantung pada putaran kamera endoskop. Orientasi tidak punya makna diagnostik, jadi flip menambah variasi posisi dan arah polip tanpa mengubah morfologinya. Model jadi tidak bergantung pada posisi tertentu. | ✍️ |
+| Kecerahan & Kontras | ✍️ `v2....` | Pencahayaan saat endoskopi berubah-ubah menurut jarak kamera ke mukosa, sudut pandang, pantulan cairan atau lendir, dan perbedaan alat antar rumah sakit. Polip bisa tampak terlalu terang atau terlalu gelap, dengan kontras yang rendah terhadap mukosa di sekitarnya. Augmentasi ini membuat model lebih tahan terhadap variasi tersebut. | ✍️ |
+| Flip + Kecerahan & Kontras | ✍️ `v2....` | Flip diperkirakan meningkatkan Dice Score secara moderat karena model melihat lebih banyak variasi posisi polip dan lebih sedikit overfitting. Kecerahan & Kontras diperkirakan meningkatkan Dice Score pada data uji dengan kondisi pencahayaan berbeda dari data latih. Kombinasi keduanya diperkirakan memberi Dice Score tertinggi, selama parameter kecerahan dan kontras tidak terlalu ekstrem sampai batas polip jadi tidak terlihat. | ✍️ |
 
 Contoh augmentasi yang dicoba:
 
