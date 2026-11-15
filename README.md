@@ -1,4 +1,3 @@
-
 # Segmentasi Polip pada Citra Kolonoskopi dengan U-Net
 
 **Tugas P10 — Kecerdasan Buatan (BM25-41204), Teknik Biomedis ITERA**
@@ -17,163 +16,147 @@ Augmentasi apa yang membantu U-Net menemukan polip pada citra kolonoskopi, dan a
 
 ## 2. Data & pengaturan
 
-- **Dataset:** Kvasir-SEG, terdiri dari 1.000 citra kolonoskopi dan mask polip yang diperkecil menjadi 128 × 128 piksel.
-- **Data uji:** 200 citra yang digunakan secara tetap.
+- **Dataset:** Kvasir-SEG, berisi 1.000 citra kolonoskopi beserta mask polip, yang diperkecil menjadi 128 × 128 piksel.
+- **Data uji:** 200 citra yang dipertahankan sama untuk seluruh skenario.
 - **Kumpulan data latih:** 800 citra, dengan 200 citra dipilih pada setiap ulangan.
-- **Model:** U-Net mini (±0,5 juta parameter).
+- **Model:** U-Net mini (sekitar 0,5 juta parameter).
 - **Jumlah epoch:** 40.
-- **Jumlah ulangan:** 3 untuk setiap skenario.
-- **Jumlah skenario:** 3 (Tanpa augmentasi, Flip, Kecerahan & Kontras).
+- **Jumlah ulangan:** 3 pada setiap skenario.
+- **Skenario:** Tanpa augmentasi, Flip, dan Kecerahan & Kontras.
 - **Total eksperimen:** 9 proses training.
 - **Perangkat:** Google Colab dengan GPU NVIDIA Tesla T4 (CUDA).
 - **Mode eksperimen:** `CEPAT = False`.
 
-Pembagian data dilakukan menggunakan random seed tetap agar data uji konsisten. Pada setiap ulangan, pemilihan citra latih menggunakan seed sesuai nomor ulangan, dan ketiga skenario menggunakan kumpulan citra latih yang sama pada ulangan tersebut.
+Pembagian data uji menggunakan *random seed* tetap. Pada setiap ulangan, ketiga skenario menggunakan pilihan 200 citra latih yang sama dan titik awal model yang disamakan untuk membuat perbandingan lebih adil.
 
-Contoh citra kolonoskopi dan mask polip dari dataset Kvasir-SEG:
+Contoh citra kolonoskopi dan mask acuan dari dataset Kvasir-SEG:
 
 ![Contoh data Kvasir-SEG](hasil/contoh_data.png)
 
 ## 3. Skenario augmentasi & hipotesis
 
-Tiga skenario eksperimen digunakan untuk mengevaluasi pengaruh augmentasi terhadap kemampuan model U-Net melakukan segmentasi polip. Hipotesis disusun sebelum eksperimen akhir dijalankan.
+Tiga skenario digunakan untuk mengevaluasi pengaruh augmentasi terhadap segmentasi polip. Hipotesis berikut ditulis dan di-*commit* oleh Puri sebelum eksperimen akhir dijalankan.
 
 | Skenario | Augmentasi (kode) | Alasan klinis | Hipotesis: Dice naik/turun/sama? |
 |---|---|---|---|
 | Tanpa augmentasi | — | Pembanding | — |
-| Flip | `v2.Compose([v2.RandomHorizontalFlip(), v2.RandomVerticalFlip()])` | Kamera endoskop berputar bebas di dalam usus, jadi tidak ada arah "atas" atau "kiri" yang pasti. Polip bisa muncul di sisi mana pun dinding usus. Foto yang di-flip tetap masuk akal secara klinis dan bentuk polip tidak berubah, berbeda dengan X-ray dada tempat flip memindahkan jantung ke sisi lain. | Naik. Dengan hanya 200 citra latih, flip menambah variasi posisi dan arah polip yang realistis sehingga model tidak menghafal letak tertentu dan overfitting berkurang. |
-| Kecerahan & Kontras | `v2.ColorJitter(brightness=0.3, contrast=0.3)` | Terang gambar endoskopi tidak selalu sama. Lampu ada di ujung kamera, jadi kecerahan berubah menurut jarak dan sudut kamera ke mukosa, pantulan cairan atau lendir, dan perbedaan alat. Polip bisa tampak lebih terang atau gelap dan kurang kontras terhadap mukosa di sekitarnya. | Naik sedikit atau sama. Kenaikannya diperkirakan lebih kecil daripada Flip, karena foto Kvasir-SEG berasal dari rumah sakit dan alat yang relatif seragam sehingga variasi pencahayaan antara data latih dan uji tidak besar. |
+| Flip | `v2.Compose([v2.RandomHorizontalFlip(), v2.RandomVerticalFlip()])` | Kamera endoskop berputar bebas di dalam usus, jadi tidak ada arah "atas" atau "kiri" yang pasti. Polip bisa muncul di sisi mana pun dinding usus. Foto yang di-*flip* tetap masuk akal secara klinis dan bentuk polip tidak berubah, berbeda dengan X-ray dada tempat *flip* memindahkan jantung ke sisi lain. | **Naik.** Dengan hanya 200 citra latih, *flip* menambah variasi posisi dan arah polip yang realistis sehingga model tidak menghafal letak tertentu dan *overfitting* berkurang. |
+| Kecerahan & Kontras | `v2.ColorJitter(brightness=0.3, contrast=0.3)` | Terang gambar endoskopi tidak selalu sama. Lampu ada di ujung kamera, jadi kecerahan berubah menurut jarak dan sudut kamera ke mukosa, pantulan cairan atau lendir, dan perbedaan alat. Polip bisa tampak lebih terang atau gelap dan kurang kontras terhadap mukosa di sekitarnya. | **Naik sedikit atau sama.** Kenaikannya diperkirakan lebih kecil daripada Flip, karena foto Kvasir-SEG berasal dari rumah sakit dan alat yang relatif seragam sehingga variasi pencahayaan antara data latih dan uji diperkirakan tidak besar. |
 
 ### Visualisasi augmentasi
 
-**1. Augmentasi Flip**
+**1. Flip**
 
-Augmentasi Flip menggunakan perubahan orientasi horizontal dan vertikal pada citra beserta mask polip. Perubahan dilakukan secara bersamaan agar posisi mask tetap sesuai dengan citra.
+Citra dan mask polip dibalik secara bersamaan agar lokasi mask tetap sesuai dengan lokasi polip.
 
-![Augmentasi Flip](hasil/augmentasi_flip.png)
+![Contoh augmentasi Flip](hasil/augmentasi_flip.png)
 
-**2. Augmentasi Kecerahan & Kontras**
+**2. Kecerahan & Kontras**
 
-Augmentasi Kecerahan & Kontras menggunakan `ColorJitter` untuk menghasilkan variasi pencahayaan citra kolonoskopi tanpa mengubah posisi mask polip.
+`ColorJitter` mengubah intensitas dan kontras citra tanpa menggeser mask polip.
 
-![Augmentasi Kecerahan dan Kontras](hasil/augmentasi_kecerahan_dan_kontras.png)
+![Contoh augmentasi Kecerahan dan Kontras](hasil/augmentasi_kecerahan_dan_kontras.png)
 
 ## 4. Hasil
 
-Eksperimen akhir dilakukan menggunakan 200 citra latih, 40 epoch, dan 3 ulangan pada setiap skenario. Evaluasi dilakukan menggunakan 200 citra uji yang sama untuk seluruh skenario.
-
-Metrik evaluasi yang digunakan adalah Dice Score dan Intersection over Union (IoU). Hasil disajikan dalam bentuk rata-rata dan simpangan baku dari tiga ulangan.
-
-### Tabel hasil eksperimen
+Eksperimen dilakukan pada 200 citra latih, 40 epoch, dan 3 ulangan untuk setiap skenario. Ketiga skenario dievaluasi menggunakan 200 citra uji yang sama. Metrik yang digunakan adalah Dice Score dan *Intersection over Union* (IoU). Nilai ditampilkan sebagai rata-rata ± simpangan baku (SD) dari tiga ulangan.
 
 | Skenario | Dice (rata-rata ± SD) | IoU (rata-rata ± SD) | Dice tiap ulangan |
 |---|---|---|---|
 | Tanpa augmentasi | 0.560 ± 0.028 | 0.446 ± 0.020 | 0.581, 0.578, 0.520 |
-| Flip | 0.639 ± 0.021 | 0.525 ± 0.019 | 0.621, 0.626, 0.669 |
+| Flip | **0.639 ± 0.021** | **0.525 ± 0.019** | 0.621, 0.626, 0.669 |
 | Kecerahan & Kontras | 0.588 ± 0.035 | 0.472 ± 0.025 | 0.538, 0.617, 0.609 |
 
 ### Grafik perbandingan
 
-Grafik berikut menunjukkan perbandingan rata-rata Dice Score pada ketiga skenario. Garis kesalahan menunjukkan simpangan baku dari tiga ulangan eksperimen.
+Grafik menunjukkan rata-rata Dice Score untuk ketiga skenario, dengan garis kesalahan berupa simpangan baku antarulangan.
 
 ![Grafik perbandingan Dice Score](hasil/perbandingan.png)
 
-Berdasarkan hasil eksperimen, skenario Flip menghasilkan Dice Score rata-rata tertinggi sebesar 0.639, diikuti Kecerahan & Kontras sebesar 0.588, dan Tanpa augmentasi sebesar 0.560.
+Flip menghasilkan Dice dan IoU rata-rata tertinggi pada eksperimen ini. Dibandingkan tanpa augmentasi, peningkatan Dice rata-rata mencapai **0.079 poin** untuk Flip dan **0.028 poin** untuk Kecerahan & Kontras.
 
-Hasil lengkap setiap ulangan dan konfigurasi eksperimen tersedia pada file `hasil/hasil.json` dan `hasil/ringkasan.md`.
+Data setiap ulangan dan konfigurasi eksperimen tersedia di [`hasil/hasil.json`](hasil/hasil.json) dan [`hasil/ringkasan.md`](hasil/ringkasan.md).
 
 ## 5. Analisis peta kesalahan
 
-![Peta kesalahan model](hasil/peta_kesalahan.png)
+Peta kesalahan berikut membandingkan mask acuan dengan prediksi model dari contoh citra uji. Visualisasi ini berasal dari model yang disimpan pada **ulangan pertama** setiap skenario, sehingga nilai Dice per contoh gambar tidak sama dengan rata-rata tiga ulangan pada tabel hasil.
 
-Analisis akan membahas:
+![Peta kesalahan segmentasi](hasil/peta_kesalahan.png)
 
-1. Interpretasi peta kesalahan segmentasi model.
-2. False Positive, yaitu area bukan polip yang diprediksi sebagai polip.
-3. False Negative, yaitu area polip yang tidak berhasil terdeteksi.
-4. Karakteristik polip yang sulit disegmentasi.
-5. Perbedaan kesalahan antara ketiga skenario augmentasi.
-6. Pengaruh augmentasi terhadap hasil segmentasi pada contoh citra yang sulit.
+### 5.1 Interpretasi peta kesalahan
 
+Pada peta kesalahan, **hijau** menunjukkan *True Positive* (piksel polip yang diprediksi benar), **merah** menunjukkan *False Positive* (piksel nonpolip yang diprediksi sebagai polip), dan **biru** menunjukkan *False Negative* (piksel polip yang terlewat). Area hitam menunjukkan piksel latar belakang yang tidak termasuk ketiga kategori tersebut. Prediksi yang baik ditandai oleh dominasi warna hijau dengan area merah dan biru sesedikit mungkin.
 
-### 5.1 Interpretasi Peta Kesalahan
-Peta kesalahan digunakan untuk mengevaluasi hasil segmentasi model U-Net dengan membandingkan area hasil prediksi model terhadap ground truth atau mask acuan. Visualisasi ini membantu mengidentifikasi bagian citra yang berhasil disegmentasi maupun bagian yang masih mengalami kesalahan. Pada peta kesalahan, warna hijau menunjukkan area polip yang berhasil diprediksi dengan benar (True Positive), warna merah menunjukkan area bukan polip yang salah diprediksi sebagai polip (False Positive), sedangkan warna biru menunjukkan area polip yang tidak berhasil terdeteksi oleh model (False Negative). Dengan demikian, semakin dominan area hijau dan semakin sedikit area merah serta biru, semakin baik kesesuaian hasil prediksi terhadap mask acuan.
 ### 5.2 Analisis False Positive dan False Negative
-Kesalahan segmentasi dapat terjadi dalam dua bentuk, yaitu False Positive dan False Negative. False Positive terjadi ketika model mengidentifikasi area yang sebenarnya merupakan bagian dari jaringan atau latar belakang sebagai polip. Kesalahan ini dapat dipengaruhi oleh kemiripan karakteristik visual antara polip dan jaringan di sekitarnya, seperti warna, tekstur, maupun pantulan cahaya pada citra kolonoskopi. Sementara itu, False Negative terjadi ketika bagian polip yang seharusnya terdeteksi justru tidak dimasukkan ke dalam hasil segmentasi. Kondisi ini dapat terjadi ketika karakteristik polip kurang menonjol, memiliki kontras rendah, atau batas antara polip dan jaringan sekitarnya sulit dibedakan. Kedua jenis kesalahan tersebut menunjukkan bahwa model masih memiliki keterbatasan dalam mengenali batas dan karakteristik objek polip secara tepat.
-### 5.3 Karakteristik Polip yang Sulit Disegmentasi
-Tingkat kesulitan segmentasi polip dapat dipengaruhi oleh karakteristik visual objek pada citra kolonoskopi. Polip dengan ukuran relatif kecil, kontras rendah, tekstur yang menyerupai jaringan sekitarnya, serta batas objek yang kurang jelas berpotensi lebih sulit dikenali oleh model. Selain itu, variasi pencahayaan dan pantulan cahaya pada permukaan jaringan dapat memengaruhi kemampuan model dalam membedakan area polip dari latar belakang. Karakteristik tersebut dapat menyebabkan hasil segmentasi tidak sepenuhnya mengikuti bentuk dan batas polip pada mask acuan. Oleh karena itu, evaluasi terhadap citra dengan nilai Dice Score tinggi dan rendah diperlukan untuk mengetahui sejauh mana model mampu mempertahankan ketepatan segmentasi pada kondisi citra yang berbeda.### 5.5 Pengaruh Augmentasi terhadap Segmentasi pada Citra Sulit
-Penggunaan augmentasi bertujuan meningkatkan variasi data pelatihan sehingga model dapat mempelajari karakteristik objek dari kondisi citra yang lebih beragam. Augmentasi Flip memberikan variasi orientasi citra yang dapat membantu model mengenali polip tanpa terlalu bergantung pada posisi atau arah objek tertentu. Sementara itu, augmentasi Kecerahan dan Kontras memberikan variasi kondisi intensitas pencahayaan sehingga model berpotensi lebih adaptif terhadap perubahan tampilan citra kolonoskopi.
-Berdasarkan hasil eksperimen, kedua jenis augmentasi menunjukkan peningkatan performa dibandingkan skenario tanpa augmentasi. Namun, skenario Flip memberikan peningkatan paling tinggi berdasarkan nilai Dice Score dan IoU. Hal ini mengindikasikan bahwa variasi orientasi citra memberikan kontribusi yang lebih baik terhadap kemampuan segmentasi model pada penelitian ini. Meskipun demikian, efektivitas augmentasi pada citra yang sulit tetap perlu ditinjau melalui perbandingan visual peta kesalahan dan contoh citra dengan nilai Dice Score rendah maupun tinggi.
-### 5.4 Perbandingan Kesalahan Antar Skenario Augmentasi
-Penelitian ini membandingkan tiga skenario, yaitu tanpa augmentasi, augmentasi Flip, serta augmentasi Kecerahan dan Kontras. Berdasarkan hasil evaluasi kuantitatif, skenario tanpa augmentasi memperoleh Dice Score sebesar 0.560 dan IoU sebesar 0.446. Skenario Flip menghasilkan Dice Score sebesar 0.639 dan IoU sebesar 0.525, sedangkan skenario Kecerahan dan Kontras memperoleh Dice Score sebesar 0.588 dan IoU sebesar 0.472.
-Hasil tersebut menunjukkan bahwa skenario Flip memiliki performa segmentasi terbaik berdasarkan kedua metrik evaluasi. Peningkatan nilai Dice dan IoU menunjukkan bahwa hasil prediksi model pada skenario ini memiliki kesesuaian area yang lebih baik terhadap mask acuan. Sementara itu, augmentasi Kecerahan dan Kontras juga menunjukkan peningkatan dibandingkan skenario tanpa augmentasi, meskipun peningkatannya tidak sebesar skenario Flip. Perbandingan visual pada peta kesalahan diperlukan untuk mengidentifikasi secara lebih spesifik perubahan distribusi False Positive dan False Negative pada masing-masing skenario.
-### 5.5 Pengaruh Augmentasi terhadap Segmentasi pada Citra Sulit
-Penggunaan augmentasi bertujuan meningkatkan variasi data pelatihan sehingga model dapat mempelajari karakteristik objek dari kondisi citra yang lebih beragam. Augmentasi Flip memberikan variasi orientasi citra yang dapat membantu model mengenali polip tanpa terlalu bergantung pada posisi atau arah objek tertentu. Sementara itu, augmentasi Kecerahan dan Kontras memberikan variasi kondisi intensitas pencahayaan sehingga model berpotensi lebih adaptif terhadap perubahan tampilan citra kolonoskopi.
-Berdasarkan hasil eksperimen, kedua jenis augmentasi menunjukkan peningkatan performa dibandingkan skenario tanpa augmentasi. Namun, skenario Flip memberikan peningkatan paling tinggi berdasarkan nilai Dice Score dan IoU. Hal ini mengindikasikan bahwa variasi orientasi citra memberikan kontribusi yang lebih baik terhadap kemampuan segmentasi model pada penelitian ini. Meskipun demikian, efektivitas augmentasi pada citra yang sulit tetap perlu ditinjau melalui perbandingan visual peta kesalahan dan contoh citra dengan nilai Dice Score rendah maupun tinggi.
-### 5.6 Pengaruh augmentasi terhadap hasil segmentasi pada contoh citra yang sulit.
-Augmentasi data membantu model mempelajari variasi karakteristik citra sehingga dapat meningkatkan kemampuan segmentasi polip. Berdasarkan hasil eksperimen, augmentasi Flip memberikan performa terbaik dengan Dice Score 0.639 dan IoU 0.525, dibandingkan Kecerahan dan Kontras serta tanpa augmentasi. Hal ini menunjukkan bahwa variasi orientasi citra berpotensi membantu model mengenali polip dengan posisi yang berbeda. Sementara itu, augmentasi Kecerahan dan Kontras juga memberikan peningkatan dibandingkan baseline karena model memperoleh variasi kondisi pencahayaan. Namun, pengaruh kedua augmentasi terhadap citra yang sulit disegmentasi secara spesifik masih perlu dikonfirmasi melalui pengamatan langsung pada peta kesalahan.
+
+Pada dua contoh citra pertama, model kesulitan menemukan polip dengan tepat. Prediksi pada skenario tanpa augmentasi dan Flip memperlihatkan area merah di luar mask acuan, sedangkan warna biru masih tampak pada lokasi polip yang terlewat. Pada skenario Kecerahan & Kontras, kedua contoh tersebut didominasi latar hitam dan area biru, yang menunjukkan polip hampir seluruhnya tidak terdeteksi.
+
+Kesalahan *False Positive* dapat muncul ketika model keliru mengenali tekstur jaringan atau pantulan cahaya sebagai polip. *False Negative* dapat terjadi ketika polip berukuran kecil, memiliki warna yang mirip jaringan sekitar, atau batasnya tidak menonjol. Penjelasan ini merupakan kemungkinan penyebab berdasarkan tampilan citra, bukan hasil pengujian penyebab secara terpisah.
+
+### 5.3 Karakteristik polip yang sulit disegmentasi
+
+Pada baris pertama dan kedua peta kesalahan, mask polip terlihat relatif kecil dibandingkan luas gambar dan berada pada permukaan yang memiliki tekstur atau pantulan cukup ramai. Dua contoh tersebut memperoleh Dice sekitar **0.00** pada sebagian besar skenario; hanya Flip pada contoh kedua yang mencapai sekitar **0.02**. Hasil ini menunjukkan bahwa model masih kesulitan membedakan polip kecil dari jaringan di sekitarnya.
+
+Sebaliknya, pada baris ketiga dan keempat, polip tampak lebih menonjol dan sebagian besar area mask berhasil diprediksi. Kedua contoh tersebut memiliki Dice yang jauh lebih tinggi, meskipun masih terdapat kesalahan di sekitar batas polip.
+
+### 5.4 Perbandingan kesalahan antar skenario
+
+Secara keseluruhan, rata-rata Dice untuk Tanpa augmentasi, Flip, dan Kecerahan & Kontras berturut-turut adalah **0.560**, **0.639**, dan **0.588**, sedangkan IoU-nya adalah **0.446**, **0.525**, dan **0.472**. Berdasarkan kedua metrik, Flip memberikan hasil terbaik pada eksperimen ini.
+
+Namun, hasil pada satu citra tidak selalu mengikuti peringkat rata-rata. Contohnya, pada baris ketiga peta kesalahan, Dice model Tanpa augmentasi sekitar **0.95**, sedikit di atas Flip (**0.94**) dan Kecerahan & Kontras (**0.92**). Artinya, augmentasi tidak selalu memperbaiki prediksi setiap citra secara individual.
+
+### 5.5 Pengaruh augmentasi pada contoh citra sulit dan mudah
+
+Pada baris keempat, Flip memberikan prediksi paling sesuai dengan mask acuan, dengan Dice sekitar **0.98**. Tanpa augmentasi memperoleh **0.95**, sedangkan Kecerahan & Kontras **0.76** dan menampilkan area biru yang lebih besar. Sebaliknya, pada dua contoh teratas yang lebih sulit, ketiga skenario tetap gagal menghasilkan segmentasi yang baik.
+
+Dengan demikian, Flip meningkatkan performa rata-rata dan membantu pada beberapa contoh, tetapi belum mengatasi seluruh kasus sulit. Perubahan kecerahan dan kontras juga memberikan peningkatan rata-rata dibandingkan baseline, meskipun pada contoh tertentu justru menghasilkan lebih banyak piksel polip yang terlewat. Jumlah contoh pada peta kesalahan terbatas; penilaian utama tetap mengacu pada evaluasi terhadap 200 citra uji di setiap ulangan.
 
 ## 6. Pembahasan & kesimpulan
 
-**Bagian ini dikerjakan oleh Andini Nurul Fitri.**
+### 6.1 Perbandingan hasil dengan hipotesis
 
-Pembahasan akan mencakup:
+Hipotesis Puri menyatakan bahwa Flip diperkirakan meningkatkan Dice, sedangkan Kecerahan & Kontras diperkirakan meningkatkan Dice sedikit atau menghasilkan nilai yang serupa dengan baseline. Hasil eksperimen **mendukung kedua hipotesis tersebut**: Flip memiliki Dice rata-rata **0.639**, Kecerahan & Kontras **0.588**, dan Tanpa augmentasi **0.560**.
 
-1. Perbandingan performa model pada ketiga skenario.
-2. Kesesuaian hasil eksperimen dengan hipotesis pada Bagian 3.
-3. Penjelasan kemungkinan penyebab perbedaan Dice Score dan IoU.
-4. Kelebihan dan keterbatasan augmentasi yang digunakan.
-5. Kesimpulan mengenai pengaruh augmentasi terhadap segmentasi polip menggunakan U-Net.
+Variasi orientasi pada Flip mungkin membantu model mengenali polip di berbagai posisi tanpa terlalu bergantung pada arah citra. Kecerahan & Kontras memberikan variasi pencahayaan yang juga bermanfaat, tetapi peningkatannya lebih kecil. Ini merupakan interpretasi yang masuk akal terhadap hasil eksperimen, bukan bukti langsung mengenai mekanisme penyebabnya.
 
-Berdasarkan hasil eksperimen, skenario tanpa augmentasi memperoleh Dice Score sebesar 0.560 ± 0.028 dan IoU sebesar 0.446 ± 0.020. Skenario Flip menghasilkan performa tertinggi dengan Dice Score 0.639 ± 0.021 dan IoU 0.525 ± 0.019. Sementara itu, augmentasi Kecerahan dan Kontras memperoleh Dice Score 0.588 ± 0.035 dan IoU 0.472 ± 0.025. Hasil ini menunjukkan bahwa Flip memberikan peningkatan performa paling baik dibandingkan skenario lainnya.
+### 6.2 Interpretasi Dice dan IoU
 
-Hasil eksperimen sesuai dengan hipotesis pada Bagian 3. Augmentasi Flip meningkatkan performa karena variasi orientasi citra membantu model mengenali polip dari berbagai arah, sehingga tidak bergantung pada posisi objek tertentu. Sementara itu, Kecerahan dan Kontras memberikan peningkatan yang lebih kecil karena variasi pencahayaan pada dataset diperkirakan tidak terlalu besar. Dengan demikian, kedua augmentasi memberikan hasil positif, tetapi Flip lebih efektif pada eksperimen ini.
+Dice mengukur kesesuaian antara mask prediksi dan mask acuan menggunakan perbandingan dua kali luas irisan terhadap jumlah luas kedua mask. IoU membandingkan luas irisan terhadap luas gabungannya. Karena perbedaan rumus, nilai Dice pada hasil ini lebih tinggi daripada IoU. Kedua metrik memberikan urutan performa skenario yang sama: **Flip > Kecerahan & Kontras > Tanpa augmentasi**.
 
-Perbedaan nilai Dice Score dan IoU terjadi karena keduanya mengukur tingkat kesesuaian area prediksi dengan mask acuan menggunakan perhitungan yang berbeda. Dice menggunakan perbandingan irisan terhadap total luas kedua mask, sedangkan IoU membandingkan irisan terhadap luas gabungan kedua mask. Oleh karena itu, nilai Dice umumnya lebih tinggi dibandingkan IoU.
+### 6.3 Keterbatasan
 
-Penelitian ini memiliki keterbatasan berupa jumlah data yang terbatas, penggunaan ukuran citra 128 × 128 piksel, serta pengujian yang hanya dilakukan sebanyak tiga kali pengulangan. Selain itu, belum dilakukan uji signifikansi statistik sehingga perbedaan performa antar skenario belum dapat dinyatakan signifikan secara statistik.
+Eksperimen hanya menggunakan **200 citra latih per ulangan** dan resolusi **128 × 128 piksel**, sehingga detail batas polip yang halus mungkin berkurang. Setiap skenario diulang **tiga kali**; jumlah ini belum cukup untuk menarik kesimpulan tentang signifikansi statistik tanpa pengujian tambahan. Peta kesalahan hanya menampilkan beberapa citra contoh dari model ulangan pertama dan tidak mewakili seluruh kondisi klinis. Penelitian ini juga belum mengevaluasi penerapan pada data dari pusat atau perangkat endoskopi yang berbeda.
 
-Berdasarkan hasil tersebut, augmentasi Flip merupakan metode yang paling membantu meningkatkan performa segmentasi polip menggunakan U-Net, dengan Dice Score 0.639 dan IoU 0.525. Hasil ini menunjukkan bahwa variasi orientasi citra memberikan kontribusi lebih baik dibandingkan augmentasi Kecerahan dan Kontras maupun tanpa augmentasi pada eksperimen ini.
+### 6.4 Kesimpulan
+
+Pada konfigurasi eksperimen ini, **augmentasi Flip merupakan skenario paling efektif** dengan Dice **0.639 ± 0.021** dan IoU **0.525 ± 0.019**. Kecerahan & Kontras juga mengungguli skenario tanpa augmentasi, tetapi peningkatannya lebih kecil. Walaupun hasil rata-rata membaik, beberapa citra—terutama contoh polip kecil atau sulit dibedakan dari jaringan sekitar—masih menunjukkan kesalahan segmentasi besar. Dengan demikian, augmentasi membantu performa U-Net mini pada data uji ini, tetapi hasilnya belum cukup untuk menyimpulkan kesiapan penggunaan klinis.
 
 ## 7. Pembagian kerja
 
-Pembagian tugas dilakukan berdasarkan tahapan persiapan, perancangan eksperimen, implementasi, analisis, dan finalisasi.
-
 | Anggota | Tanggung jawab | Hasil pekerjaan |
 |---|---|---|
-| Nadira Aulivia Az Zahra | Persiapan repository, konfigurasi Git, pengujian notebook, pelaksanaan eksperimen akhir, pengolahan hasil, dan finalisasi | Notebook U-Net, hasil eksperimen, grafik, tabel evaluasi, dan dokumentasi README |
-| Puri Andhana Ht Sibero | Penyusunan skenario augmentasi beserta alasan klinis dan hipotesis | README Bagian 3 |
-| Andini Nurul Fitri | Analisis peta kesalahan, interpretasi hasil, pembahasan hipotesis, dan kesimpulan | README Bagian 5 dan 6 (menunggu penyelesaian) |
+| Nadira Aulivia Az Zahra | Persiapan repository dan Git, pengujian notebook, eksperimen akhir, penyimpanan hasil, serta finalisasi | Notebook U-Net, tabel Dice/IoU, grafik, folder `hasil/`, dan perapian README |
+| Puri Andhana Ht Sibero | Menentukan skenario augmentasi, alasan klinis, dan hipotesis sebelum eksperimen akhir | README Bagian 3 |
+| Andini Nurul Fitri | Menganalisis peta kesalahan, membandingkan hasil dengan hipotesis, serta menyusun kesimpulan | README Bagian 5 dan 6 |
 
-Kontribusi anggota didokumentasikan melalui riwayat commit pada repository GitHub menggunakan akun masing-masing.
+Setiap anggota telah memiliki kontribusi dalam riwayat commit repository melalui akun GitHub masing-masing. Commit yang menandai tahap utama antara lain `48b5cc0` (Puri), `2caf058` (Nadira), dan `2eb84fc` (Andini). Perapian dan finalisasi dokumentasi dilakukan setelah kontribusi ketiga anggota digabungkan.
 
 ## 8. Penggunaan AI
 
-Dalam pengerjaan tugas ini, Nadira menggunakan ChatGPT sebagai alat bantu untuk:
+Nadira menggunakan **ChatGPT** sebagai alat bantu untuk memahami langkah Git/GitHub dan Google Colab, memeriksa konfigurasi notebook, membaca keluaran Dice/IoU dan grafik, serta menyunting README. ChatGPT juga membantu menyusun revisi dan interpretasi contoh peta kesalahan pada Bagian 5–6 berdasarkan data hasil eksperimen; isi revisi perlu ditinjau oleh anggota kelompok sebelum pengumpulan. Data eksperimen dan seluruh gambar evaluasi berasal dari eksekusi notebook Python di Google Colab, bukan hasil yang dibuat oleh AI.
 
-1. Pendampingan penggunaan Git, GitHub, dan Google Colab.
-2. Membantu pemeriksaan konfigurasi notebook sebelum eksperimen akhir.
-3. Membantu interpretasi awal output eksperimen, termasuk Dice Score, IoU, dan grafik perbandingan.
-4. Membantu menyusun dan merapikan dokumentasi README.
-
-Eksperimen U-Net dijalankan menggunakan notebook Python di Google Colab. Nilai Dice Score, IoU, serta visualisasi yang dilaporkan berasal dari hasil eksekusi notebook, bukan angka yang dibuat oleh AI.
-
-**Catatan:** Penggunaan AI oleh Puri dan Andini perlu dikonfirmasi kepada masing-masing anggota dan dilengkapi sebelum pengumpulan akhir.
+**Penggunaan AI oleh Puri dan Andini:** perlu dikonfirmasi kepada masing-masing anggota sebelum pengumpulan. Jika menggunakan AI, cantumkan nama alat dan bagian pekerjaan yang dibantu. Jika tidak, tulis secara eksplisit bahwa anggota tersebut tidak menggunakan AI.
 
 ## Cara menjalankan ulang
 
-Repository dapat dijalankan menggunakan lingkungan Python yang sesuai dengan file `pyproject.toml`.
+Gunakan lingkungan Python yang sesuai dengan `pyproject.toml`, lalu jalankan:
 
 ```bash
 uv sync
 uv run jupyter lab segmentasi_polip.ipynb
 ```
 
-Alternatifnya, buka notebook `segmentasi_polip.ipynb` menggunakan Google Colab, kemudian pilih:
-
-**Runtime → Change runtime type → T4 GPU**
-
-Pastikan pengaturan eksperimen akhir menggunakan:
+Atau buka `segmentasi_polip.ipynb` di Google Colab dan pilih **Runtime → Change runtime type → T4 GPU**. Pastikan pengaturan eksperimen akhir:
 
 ```python
 CEPAT = False
@@ -182,12 +165,9 @@ JUMLAH_EPOCH = 40
 JUMLAH_ULANGAN = 3
 ```
 
-Jalankan notebook secara berurutan untuk mempersiapkan dataset, menerapkan augmentasi, melatih model U-Net, melakukan evaluasi, dan menghasilkan visualisasi.
-
-Hasil eksperimen disimpan dalam folder `hasil/`. Dataset asli tidak dimasukkan ke repository GitHub.
+Jalankan sel secara berurutan untuk menyiapkan dataset, menerapkan augmentasi, melatih U-Net, mengevaluasi prediksi, dan menghasilkan gambar. Folder `hasil/` menyimpan artefak eksperimen; dataset tidak diunggah ke repository.
 
 ## Referensi
 
 1. Jha, D., dkk. (2020). Kvasir-SEG: A Segmented Polyp Dataset. *MultiMedia Modeling (MMM 2020)*, 451–462.
-
 2. Ronneberger, O., Fischer, P., & Brox, T. (2015). U-Net: Convolutional Networks for Biomedical Image Segmentation. *MICCAI*. arXiv:1505.04597.
