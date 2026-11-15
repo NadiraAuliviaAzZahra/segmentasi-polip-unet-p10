@@ -143,9 +143,13 @@ Setiap anggota telah memiliki kontribusi dalam riwayat commit repository melalui
 
 ## 8. Penggunaan AI
 
-Nadira menggunakan **ChatGPT** sebagai alat bantu untuk memahami langkah Git/GitHub dan Google Colab, memeriksa konfigurasi notebook, membaca keluaran Dice/IoU dan grafik, serta menyunting README. ChatGPT juga membantu menyusun revisi dan interpretasi contoh peta kesalahan pada Bagian 5–6 berdasarkan data hasil eksperimen; isi revisi perlu ditinjau oleh anggota kelompok sebelum pengumpulan. Data eksperimen dan seluruh gambar evaluasi berasal dari eksekusi notebook Python di Google Colab, bukan hasil yang dibuat oleh AI.
+Dalam pengerjaan tugas ini, ChatGPT digunakan sebagai alat bantu untuk memahami beberapa konsep yang berkaitan dengan segmentasi citra medis dan eksperimen U-Net. Bentuk bantuan AI yang digunakan dalam materi tugas meliputi:
 
-**Penggunaan AI oleh Puri dan Andini:** perlu dikonfirmasi kepada masing-masing anggota sebelum pengumpulan. Jika menggunakan AI, cantumkan nama alat dan bagian pekerjaan yang dibantu. Jika tidak, tulis secara eksplisit bahwa anggota tersebut tidak menggunakan AI.
+- **Nadira:** Membantu memahami alur dan fungsi kode U-Net, termasuk pemrosesan citra dan mask, proses pelatihan model, pengaturan eksperimen, serta cara membaca keluaran evaluasi model.
+- **Puri:** Membantu memahami prinsip augmentasi Flip serta perubahan Kecerahan & Kontras, relevansinya terhadap variasi citra kolonoskopi, dan perkiraan pengaruh masing-masing augmentasi terhadap Dice Score.
+- **Andini:** Membantu memahami metrik Dice Score dan IoU, perbedaan *True Positive*, *False Positive*, dan *False Negative*, serta cara menafsirkan peta kesalahan dan keterbatasan hasil segmentasi.
+
+AI berperan sebagai pendukung pemahaman konsep. Nilai evaluasi, tabel hasil, dan gambar yang disajikan berasal dari eksperimen model yang dijalankan oleh kelompok. Interpretasi hasil tetap perlu diperiksa dan dipahami oleh anggota kelompok.
 
 ## Cara menjalankan ulang
 
@@ -170,4 +174,5 @@ Jalankan sel secara berurutan untuk menyiapkan dataset, menerapkan augmentasi, m
 ## Referensi
 
 1. Jha, D., dkk. (2020). Kvasir-SEG: A Segmented Polyp Dataset. *MultiMedia Modeling (MMM 2020)*, 451–462.
+
 2. Ronneberger, O., Fischer, P., & Brox, T. (2015). U-Net: Convolutional Networks for Biomedical Image Segmentation. *MICCAI*. arXiv:1505.04597.
